@@ -1,78 +1,98 @@
 package ru.kata.spring.boot_security.demo.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.models.User;
-import ru.kata.spring.boot_security.demo.repository.UserRepository;
+import ru.kata.spring.boot_security.demo.dao.RoleDao;
+import ru.kata.spring.boot_security.demo.dao.UserDao;
+import ru.kata.spring.boot_security.demo.model.Role;
+import ru.kata.spring.boot_security.demo.model.User;
 
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+    private UserDao userDao;
+    private final RoleDao roleDao;
+
+    public UserServiceImpl(UserDao userDao, RoleDao roleDao) {
+        this.userDao = userDao;
+        this.roleDao = roleDao;
     }
 
     @Override
-    @Transactional
     public void addUser(User user) {
-        User userFromDB = userRepository.findByUsername(user.getUsername());
-        if (userFromDB == null) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            userRepository.save(user);
-        }
+
     }
 
     @Override
-    @Transactional(readOnly = true)
     public User getUserById(Long id) {
-        return userRepository.getById(id);
+        return null;
     }
 
     @Override
-    @Transactional
-    public User updateUserById(User user) {
-        return  userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
     public void deleteUserById(Long id) {
-        if (userRepository.findById(id).isPresent()) {
-            userRepository.deleteById(id);
-        }
+
+    }
+
+    @Override
+    public void updateUserById(User user) {
+
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userDao.getAllUsers();
+    }
+
+    @Override
+    public User getUserByName(String name) {
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public void createUser(User user) {
+        user.setRoles(roleDao.getRolesByName(user.getRoles()));
+        userDao.createUser(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public User getUserByName(String username) {
-        return userRepository.findByUsername(username);
+    public User get(int id) {
+        return (User) userDao.get(id);
+    }
+
+    @Override
+    @Transactional
+    public void update(User updatedUser) {
+        updatedUser.setRoles(roleDao.getRolesByName(updatedUser.getRoles()));
+        userDao.update(updatedUser);
+    }
+
+    @Override
+    @Transactional
+    public void delete(int id) {
+        userDao.delete(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = getUserByName(username);
-        if (user == null) {
-            throw new UsernameNotFoundException(String.format("User '%s' not found", username));
-        }
+        return userDao.loadUserByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public User createUser() {
+        User user = new User();
+        Role roleUser = roleDao.getRoleByName("ROLE_USER");
+        user.addRole(roleUser);
         return user;
     }
+
 }
